@@ -2,7 +2,10 @@
   "name": "",
   "version": "",
   "dependencies": {
+    "kraken-api": "^1.0.0",
+    "kraken-exchange-api": "^1.0.0",
     "node.bittrex.api": "^1.0.0",
+    "nodemailer": "^4.6.7",
     "request": "^2.87.0"
   }
 }

@@ -1,41 +1,45 @@
 var bittrex = require('./bittrex');
-var cmc = require('./coinMarketCap');
 const request = require('request');
+var config = require('./config');
+var kraken = require('./kraken');
 
-/* ALGO PARAMETERS */
 
-var buyPercent = 0.0;
-var minIntervalToBuy = 0.02;
+
+
+/* NON MODIFIABLE */ 
+var turn = 0;
+var minTurn = 3;
 var shouldBuy = false;
-
-
-/* 1000 = 1 seconde  */
-
-var timerID = 0; 
+var timerID = 0;
 var lastPercent = -1000;
-var waitInterval = 5000;
-var rebuyInterval = 10000;//6000000;
-var maxLowPercent = 0;
-
 
 
 function startAlgoBTC() {
     console.log("algo.start called");
-    bitcoinPriceChange();
-    timerID = setInterval(bitcoinPriceChange, waitInterval);
-}
-
-function restart() {
-    console.log("algo.restart called");
+    
     lastPercent = -1000;
     maxLowPercent = 0;
+    turn = 0;
     shouldBuy = false;
-    clearInterval(timerID);
-    setTimeout(startAlgoBTC, rebuyInterval);
+    bitcoinPriceChange();
+    timerID = setInterval(bitcoinPriceChange, config.waitInterval);
 }
 
-function stop() {
+function restartAlgoBTC() {
+    console.log("algo.restart called");
+    
+    lastPercent = -1000;
+    maxLowPercent = 0;
+    turn = 0;
+    shouldBuy = false;
+    
+    //clearInterval(timerID);
+    //setTimeout(startAlgoBTC, rebuyInterval);
+}
+
+function stopAlgoBTC() {
     console.log("algo.stop called");
+
     clearInterval(timerID);
 }
 
@@ -66,11 +70,22 @@ function analyzePrice(priceUSD, priceEUR, percentChange_1h, percentChange_24h, p
 //    console.log("percentChange_1h:" + percentChange_1h);
 //    console.log("percentChange_24h:" + percentChange_24h);
 //    console.log("percentChange_7d:" + percentChange_7d);
-     
+    
+    var date = new Date().toISOString();
     console.log("");
-    console.log("percent 1h: " + percentChange_1h + ", buy % : " + buyPercent + ", min interval: " + minIntervalToBuy);
-        
-    if (percentChange_1h < buyPercent) {
+    console.log(date);
+    console.log("percent 1h: " + percentChange_1h + ", min percent to buy % : " + config.buyPercent + ", min up interval to buy: " + config.minIntervalToBuy);
+    
+    if (turn < minTurn) {
+        lastPercent = percentChange_1h;
+        turn = turn += 1; 
+        console.log("too early to trade turn: " + turn);
+        return;
+    }
+    
+    
+    
+    if (percentChange_1h < config.buyPercent) {
         console.log("should Buy");
        
         
@@ -85,9 +100,9 @@ function analyzePrice(priceUSD, priceEUR, percentChange_1h, percentChange_24h, p
         } else {
             var interval = percentChange_1h - maxLowPercent;
             console.log("ça remonte assez, que faire? interval: " + interval + ", max lowPercent: " + maxLowPercent);
-            if (interval > minIntervalToBuy) {
+            if (interval > config.minIntervalToBuy) {
                 console.log("interval supérieur, j'achète au prix de " + priceEUR);
-                buyBtc(priceEUR, lastPercent);
+                buyBtc(priceUSD, priceEUR, lastPercent/(config.buyPercentProfit/100));
                 return;
             } else {
                 console.log("interval trop faible, je ne fais rien");
@@ -97,33 +112,29 @@ function analyzePrice(priceUSD, priceEUR, percentChange_1h, percentChange_24h, p
     lastPercent = percentChange_1h;
 }
 
-function buyBtc(priceEUR, lastPercent) {
-    var buyPrice = parseFloat(priceEUR);
-    var takeProfit;
-    
-    if (lastPercent > -3 ) {
-        
-        takeProfit = (buyPrice + (buyPrice * 0.03));  
-        console.log("Take profit de 3% car faible baisse: " + parseFloat(takeProfit).toFixed(1)); 
-    } else {
-        var tpPercent = -(lastPercent/100);
-        
-        takeProfit = (buyPrice + (buyPrice * tpPercent));              
-        console.log("Take profit de " + tpPercent + "% car: " + parseFloat(takeProfit).toFixed(1));
-    }
+function buyBtc(priceUSD, priceEUR, profitPercent) {
+    profitPercent = profitPercent.toFixed(1);
     
     
+    if (profitPercent > -config.minPercentProfit ) {
+        profitPercent = config.minPercentProfit;
+    } 
     
+    var volume = (1 * config.eurosPerOrder) / priceEUR; 
+    console.log('buy btc with profitPercent: ' +  profitPercent);
     
-     
-       
+    kraken.addBTCBuyMarketOrder(volume.toFixed(8), profitPercent.toFixed(1))
     
-    restart();
+    restartAlgoBTC();
 }
+
+
+
+
 
 module.exports = {
     startAlgoBTC: startAlgoBTC, 
-    stop: stop
+    stopAlgoBTC: stopAlgoBTC
 };
 
 
