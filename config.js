@@ -5,19 +5,20 @@ config.myMail = 'arthur.hatchiguian@epitech.eu';
 
 /* ALGO PARAMETERS */
 
-config.buyPercent = 10.0; //percent under the bot buy
-config.buyPercentProfit = 75.0;
+config.buyPercent = -1.5; //percent loss the bot buy
+config.minIntervalToBuy = 0.25; //interval before buying
 
-config.minIntervalToBuy = 0.001; //interval before buying
-config.minPercentProfit = 1.25; //min take profit percent
-config.eurosPerOrder = 15; // min buy in EUR
+config.buyPercentProfit = 80.0; 
+config.minPercentProfit = 1; //min take profit percent
+config.eurosPerOrder = 12; // buy in EUR
 
 
 /* 1000  = 1s */
-config.waitInterval = 5000;
-config.rebuyInterval = 10000;//6000000;
-config.maxLowPercent = 0;
-config.minTurnBeforeTrade = 3;
+config.waitInterval = 60000; //60000 default: 60000, 1 min
 
+
+// 1 turn = waitInterval
+config.minTurnBeforeTrade = 3; 
+config.minTurnBeforeRebuy = 55;
 
 module.exports = config;

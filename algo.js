@@ -3,16 +3,13 @@ const request = require('request');
 var config = require('./config');
 var kraken = require('./kraken');
 
-
-
-
 /* NON MODIFIABLE */ 
 var turn = 0;
-var minTurn = 3;
+var minTurn = config.minTurnBeforeTrade;
 var shouldBuy = false;
 var timerID = 0;
 var lastPercent = -1000;
-
+var maxLowPercent = 0;
 
 function startAlgoBTC() {
     console.log("algo.start called");
@@ -31,10 +28,8 @@ function restartAlgoBTC() {
     lastPercent = -1000;
     maxLowPercent = 0;
     turn = 0;
+    minTurn = config.minTurnBeforeRebuy;
     shouldBuy = false;
-    
-    //clearInterval(timerID);
-    //setTimeout(startAlgoBTC, rebuyInterval);
 }
 
 function stopAlgoBTC() {
@@ -64,26 +59,17 @@ function bitcoinPriceChange() {
 
 
 function analyzePrice(priceUSD, priceEUR, percentChange_1h, percentChange_24h, percentChange_7d) {
-  
-//    console.log("priceUSD:" + priceUSD);
-//    console.log("priceEUR:" + priceEUR);
-//    console.log("percentChange_1h:" + percentChange_1h);
-//    console.log("percentChange_24h:" + percentChange_24h);
-//    console.log("percentChange_7d:" + percentChange_7d);
-    
     var date = new Date().toISOString();
     console.log("");
-    console.log(date);
+    console.log('date: ' + date);
     console.log("percent 1h: " + percentChange_1h + ", min percent to buy % : " + config.buyPercent + ", min up interval to buy: " + config.minIntervalToBuy);
     
     if (turn < minTurn) {
         lastPercent = percentChange_1h;
         turn = turn += 1; 
-        console.log("too early to trade turn: " + turn);
+        console.log("too early to trade turn: " + turn + '/'  + minTurn);
         return;
     }
-    
-    
     
     if (percentChange_1h < config.buyPercent) {
         console.log("should Buy");
